@@ -1,33 +1,59 @@
 # Main codes
 
+objects = []
+
 class Square:
-    title = ""
-    color = []
+    color = [255, 255, 255]
     isPermanent = False
+square = {
+    'color':[255, 255, 255],
+    'isPermanent':False,
+    'sort':'square',
+    'id':0,
+}
+objects.append(square)
 
 ## Matter
 
 ## Maybe in the future
 class Matter(Square):
     pass
+matter = square.copy()
+matter['sort'] = 'matter'
+matter['id'] = 1
+objects.append(matter)
 
 ## Cell
 
 class Cell(Square):
     secretions = []
+cell = square.copy()
+cell['sort'] = 'cell'
+cell['secretions'] = []
+cell['id'] = 2
+objects.append(cell)
 
 ## Bacteria
 
 class Bacteria(Cell):
-    secretions = ["SCFA's", "LPS"]
+    secretions = [9, 10]
     def __init__(self):
         self.color = [102, 204, 255]
+bacteria = cell.copy()
+bacteria['secretions'] = [9, 10]
+bacteria['color'] = [102, 204, 255]
+bacteria['id'] = 3
+objects.append(bacteria)
 
 ## Probiotic
 
 class Probiotic(Bacteria):
     def __init__(self):
         self.color = [204, 204, 0]
+probiotic = bacteria.copy()
+probiotic['color'] = [204, 204, 0]
+probiotic['id'] = 4
+objects.append(probiotic)
 
 ## Vessel
 
@@ -36,6 +62,11 @@ class Vessel(Cell):
         self.title = "Vessel"
         self.color = [204, 0, 0]
         self.isPermanent = True
+vessel = cell.copy()
+vessel['color'] = [204, 0, 0]
+vessel['isPermanent'] = True
+vessel['id'] = 5
+objects.append(vessel)
 
 ## Nerve
 
@@ -44,6 +75,11 @@ class Nerve(Cell):
         self.title = "Nerve"
         self.color = [255, 204, 0]
         self.isPermanent = True
+nerve = cell.copy()
+nerve['color'] = [255, 204, 0]
+nerve['isPermanent'] = True
+nerve['id'] = 6
+objects.append(nerve)
 
 ## Epithelial cell
 
@@ -52,6 +88,52 @@ class Epithelial(Cell):
         self.title = "Epithelial"
         self.color = [102, 255, 153]
         self.isPermanent = False
+epithelial = cell.copy()
+epithelial['color'] = [102, 255, 153]
+epithelial['isPermanent'] = True
+epithelial['id'] = 7
+objects.append(epithelial)
+
+## Tight junction
+
+junction = cell.copy()
+junction['color'] = [102, 255, 153]
+junction['isPermanent'] = False
+junction['id'] = 8
+objects.append(junction)
+
+## SCFA & LPS
+
+scfa = matter.copy()
+scfa['id'] = 9
+scfa['color'] = [153, 0, 0]
+scfa['isPermanent'] = False
+objects.append(scfa)
+
+lps = matter.copy()
+lps['id'] = 10
+lps['color'] = [255, 0, 255]
+lps['isPermanent'] = False
+objects.append(lps)
+
+idColor = {
+}
+#### Permanent Ids
+idPerm = []
+#### Types
+types = {'cell':[], }
+#### Secretions
+secrets = dict()
+for obj in objects:
+    idColor[obj['id']] = obj['color']
+    if obj['isPermanent']:
+        idPerm.append(obj['id'])
+    if obj['sort'] in types:
+        types[obj['sort']].append(obj['id'])
+    else:
+        types[obj['sort']] = [obj['id']]
+    if obj['sort'] == 'cell' and len(obj['secretions'])>0:
+        secrets[obj['id']] = obj['secretions']
 
 ## Decoding rle pattern
 
@@ -119,9 +201,10 @@ def swapYY(pattern):
 
 ## Creating the board
 
-breeder = swapYY(readPattern('patterns/backrake1.cells'))
-xlength = int(breeder[1]/3*13)
-ylength = int(breeder[2]/3*13)
+genNum = 0
+breeder = swapYY(swapXY(readPattern('patterns/lwss.cells')))
+xlength = 104
+ylength = 104
 board = [[0] * ylength for i in range(xlength)]
 lumenRatio = 6
 mucusRatio = 5
@@ -147,30 +230,46 @@ def writePattern(firstCords, lastCords, pattern, klass, space=2):
             else:
                 board[x][y] = klass()
 
+## Write patterns with dict
+
+#Write pattern with dict
+def writePatternDict(firstCords, lastCords, pattern, sqId, space=2):
+    for y in range(firstCords[1], lastCords[1]+1):
+        if (y - firstCords[1]) %(space + pattern[2]) >= pattern[2]:
+            continue
+        for x in range(firstCords[0], lastCords[0]+1):
+            if (x - firstCords[0]) % (space + pattern[1]) >= pattern[1]:
+                continue
+            val = pattern[0][(x - firstCords[0]) %(space + pattern[1])][(y - firstCords[1]) %(space + pattern[2])]
+            if val == '.':
+                board[x][y] = 0
+            elif val != 'O':
+                board[x][y] = int(val)
+            else:
+                board[x][y] = sqId
+
 #Creating probiotic attack
-writePattern([0, 0], [xlength-1, int(lumenRatio*2/3 * yRatio)-1], breeder, Probiotic)
+writePatternDict([0, 0], [xlength-1, int(lumenRatio*2/3 * yRatio)-1], breeder, probiotic['id'])
 
 #Creating Bacteria flora
-writePattern([0, int(lumenRatio*2/3 * yRatio)], [xlength-1, int(lumenRatio * yRatio -1)], readPattern('patterns/eater1.cells'), Bacteria)
+# writePatternDict([0, int(lumenRatio*2/3 * yRatio)+1], [xlength-1, int(lumenRatio * yRatio)-4], readPattern('patterns/eater1.cells'), bacteria['id'])
 
 # Creating mucus layer with Tub
-writePattern([0, int(yRatio * lumenRatio)], [xlength-1, int(yRatio * (lumenRatio+mucusRatio)-1)], readPattern('patterns/tub.cells'), Epithelial)
+writePatternDict([0, int(yRatio * lumenRatio)], [xlength-1, int(yRatio * (lumenRatio+mucusRatio)-1)], readPattern('patterns/epithelial.cells'), epithelial['id'], space=1)
 
 #Creating submucuosa
-for x in range(xlength):
+for x in range(1, xlength):
     for y in range(int(ylength-(yRatio * subMucusRatio)), int(ylength-(yRatio * subMucusRatio/2))):
         if x%4 == 0 or x%4 == 1:
-            ner = Nerve()
-            board[x][y] = ner
+            board[x][y] = nerve['id']
     for y in range(int(ylength-(yRatio * subMucusRatio/2)), ylength):
-        ves = Vessel()
-        board[x][y] = ves
+        board[x][y] = vessel['id']
 
 ## Testing that the above cods are correct or not:
 
 # for y in range(int(yRatio * lumenRatio), int(yRatio * lumenRatio + 9)):
 #     for x in range(20):
-#         print(int(board[x][y] != 0), end=" ")
+#         print(int(board[x][y]), end=" ")
 #     print('\n')
 
 # for y in range(0, int(yRatio * lumenRatio)):
@@ -185,51 +284,56 @@ for x in range(xlength):
 
 # Game Engine
 
-#Get the type of thing that live in the square
-def getClassName(obj):
-    name = str(type(obj))
-    name = name[name.find("__.")+3:name.find("'", name.find("'")+1)]
-    return name
+inBlood = dict()
+
+### New status with dict
 
 import random
-def getNewStatus(x, y, board):
-    if len(board) == 0:
-        return 0
+import operator
+def getNewStatusDict(x, y):
+    global genNum
+    global board
+    global inBlood
+    if board[x][y] in types['matter'] and y == 95:
+        inBlood[board[x][y]] = inBlood.get(board[x][y], 0) + 1
     if board[x][y] != 0:
-        if board[x][y].isPermanent:
+        if board[x][y] in idPerm:
             return board[x][y]
+                
     neighbors = dict()
     aliveNeigh = 0
     for i in range(-1, 2):
         for j in range(-1, 2):
-            if (i == 0 and j == 0) or x+i<0 or y+j<0 or x+i >= len(board) or y+j >= len(board[0]):
+            val = board[(x+i)%xlength][(y+j)%ylength]
+            if val == 0 or val in idPerm or (i == 0 and j==0) or (not (val in types['cell'])):
                 continue
-            elif board[x+i][y+j] == 0:
-                continue
-            clName = getClassName(board[x+i][y+j])
-            if clName == "Nerve" or clName == "Vessel":
-                continue
-            neighbors[clName] = neighbors.get(clName, 0) + 1
+            neighbors[val] = neighbors.get(val, 0) + 1
             aliveNeigh += 1
-    if (aliveNeigh == 3 or aliveNeigh == 6) and board[x][y] == 0:
-        maxAlive = 0
-        maxSort = []
-        for sort in neighbors:
-            if neighbors[sort] > maxAlive:
-                maxAlive = neighbors[sort]
-                maxSort.append(sort)
-        return globals()[maxSort[random.randint(0, len(maxSort)-1)]]()
-
+    if (aliveNeigh == 3 or aliveNeigh == 6) and (board[x][y] == 0 or board[x][y] in types['matter']):
+        return max(neighbors.items(), key=operator.itemgetter(1))[0]
     if aliveNeigh < 2 or aliveNeigh > 3:
+        for i in range(-1, 2):
+            for j in range(-1, 0):
+                val = board[(x+i)%xlength][(y+j)%ylength]
+                if aliveNeigh > 4 and (genNum%5 == 0) and (val in secrets) and not (i==j and i == 0):
+                    return secrets[val][random.randint(0, len(secrets[val])-1)]
+                if val in types['matter']:
+                    board[(x+i)%xlength][(y+j)%ylength] = 0
+                    return val
         return 0
 
+    if board[x][y] in types['matter']:
+        return 0
+    
     return board[x][y]
 
 def getNextGen():
+    global genNum
+    genNum = genNum + 1
     newBoard = [[0] * ylength for i in range(xlength)]
-    for x in range(xlength):
-        for y in range(ylength):
-            newBoard[x][y] = getNewStatus(x, y, board)
+    for x in range(1, xlength):
+        for y in range(1, ylength):
+            newBoard[x][y] = getNewStatusDict(x, y)
     return newBoard
 
 # Graphical setup
@@ -247,20 +351,23 @@ def getGrid():
             if board[x][y] == 0:
                 grid[x, y, :] = [255, 255, 255]
             else:
-                grid[x, y, :] = board[x][y].color
+                grid[x, y, :] = idColor[board[x][y]]
     return grid
 
 def update(data=''):
     global board
     board = getNextGen()
+    if genNum == 1000:
+        print(inBlood)
     # update data
     img.set_data(getGrid())
     return img
-    
+
 fig, ax = plt.subplots()
 img = ax.imshow(getGrid(), interpolation='nearest')
-ani = animation.FuncAnimation(fig, update, frames=700, interval=100,
+ani = animation.FuncAnimation(fig, update, frames=200, interval=50,
                             save_count=50)
-# plt.show()
+plt.show()
 
-ani.save('testfilm.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
+# ani.save('testfilm.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
+print(inBlood)
